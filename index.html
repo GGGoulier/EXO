@@ -509,8 +509,9 @@ button:disabled{opacity:.4;cursor:not-allowed}
   function msg(t,c){var f=$("fb");f.className=c||"ko";f.innerHTML=t}
   function lock(v){$("rep").disabled=v;$("rep2").disabled=v;$("check").disabled=v;$("show").disabled=v}
 
-  // nextQ : pose la question suivante (série ou étape de progression)
-  function nextQ(){
+  // nextQ : pose la question suivante (série ou étape de progression).
+  // noFocus : vrai quand on change les cases à cocher : le curseur ne va pas dans le champ de réponse (sinon la page défile jusqu’à lui).
+  function nextQ(noFocus){
     var k=progMode?PSTEPS[progIdx].k:plan[results.length];
     cur=G[k]();
     solved=false;
@@ -524,7 +525,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
     lock(false);
     $("next").disabled=true;
     $("fb").className="";$("fb").innerHTML="";
-    $("rep").focus();
+    if(!noFocus)$("rep").focus({preventScroll:true});
   }
   // fin : enregistre une réponse validée et affiche la correction
   function fin(ok,raw){
@@ -536,7 +537,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
     $("fb").innerHTML='<div class="verdict">'+(ok?"Exact.":"Réponse attendue : "+ans(cur))+'</div><p class="ct">Correction</p><ol>'+
       cur.steps.map(function(s){return"<li>"+s+"</li>"}).join("")+"</ol>"+(progMode&&!ok?'<p class="muted">Une autre question du même type va être posée.</p>':"");
     $("next").textContent=progMode?(ok?(progIdx===PSTEPS.length-1?"Terminer":"Étape suivante"):"Autre question du même type"):(results.length===10?"Voir ma note":"Question suivante");
-    $("next").disabled=false;$("next").focus();
+    $("next").disabled=false;$("next").focus({preventScroll:true});
   }
   // skip : bouton « Corriger sans valider » : correction affichée, question non comptée
   function skip(){
@@ -547,7 +548,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
     $("fb").innerHTML='<div class="verdict">Réponse attendue : '+ans(cur)+'</div><p class="ct">Correction</p><ol>'+
       cur.steps.map(function(s){return"<li>"+s+"</li>"}).join("")+'</ol><p class="muted">Cette question n’est pas comptée : une autre question du même type va être posée.</p>';
     $("next").textContent="Autre question du même type";
-    $("next").disabled=false;$("next").focus();
+    $("next").disabled=false;$("next").focus({preventScroll:true});
   }
   // check : bouton « Valider » : vérifie la saisie (messages d’aide si elle est mal écrite, sans compter d’essai)
   function check(){
@@ -581,15 +582,15 @@ button:disabled{opacity:.4;cursor:not-allowed}
     $("list").innerHTML=results.map(function(r){
       return '<li class="'+(r.ok?"ok":"ko")+'"><span class="rq">'+r.q.html+'</span><span><b>'+(r.ok?"Juste.":"Faux.")+'</b> Ta réponse : '+r.raw+(r.ok?"":" — attendu : "+ans(r.q))+'</span></li>';
     }).join("");
-    $("again").focus();
+    $("again").focus({preventScroll:true});
   }
-  // start : lance une nouvelle série de 10 questions
-  function start(){
+  // start : lance une nouvelle série de 10 questions (noFocus : voir nextQ)
+  function start(noFocus){
     results=[];plan=makePlan();
     var n=document.querySelectorAll("#opts input:checked:not([data-opt])").length;
     $("cnt").textContent=n+" coché"+(n>1?"s":"");
     $("end").className="card hide";$("pend").className="card hide";$("card").className="card";
-    nextQ();
+    nextQ(noFocus);
   }
 
   // startProg / showProgEnd / setMode : mode progression (démarrage, écran final, bascule avec les séries)
@@ -600,7 +601,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
   }
   function showProgEnd(){
     $("card").className="card hide";$("pend").className="card";solved=false;
-    $("pback").focus();
+    $("pback").focus({preventScroll:true});
   }
   function setMode(p){
     progMode=p;
@@ -626,7 +627,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
     if(e.key==="Enter"){e.preventDefault();e.stopPropagation();check()}})});
   document.addEventListener("keydown",function(e){
     if(e.key==="Enter"&&solved&&$("card").className.indexOf("hide")<0){e.preventDefault();$("next").click()}});
-  $("opts").addEventListener("change",start);
+  $("opts").addEventListener("change",function(){start(true)}); // pas de focus : évite que la page « saute » vers le champ de réponse
   $("restart").addEventListener("click",function(){progMode?startProg():start()});
   $("again").addEventListener("click",function(){
     [].forEach.call(document.querySelectorAll("#opts input"),function(e){e.checked=e.parentNode.classList.contains("key")||e.hasAttribute("data-def")});
